@@ -1,5 +1,6 @@
 #pragma once
 
+#include <csignal>
 #include <cstddef>
 #include <print>
 #include <ranges>
@@ -49,12 +50,36 @@ class App
 
         std::println("simulating get");
 
-        details::Visitor<Controllers...>::visit(controllers_, [](auto &controller) { controller.gets(); });
+        handle_route("Get", "MyController", "get");
+        handle_route("Get", "AnotherController", "users");
+        handle_route("Get", "AnotherController", "users2");
 
         std::println("running");
     }
 
   private:
+    auto handle_route(std::string_view method, std::string_view controller, std::string_view route)
+    {
+        std::println("handling {} {} {}", method, controller, route);
+
+        auto handled = false;
+
+        details::Visitor<Controllers...>::visit(
+            controllers_,
+            [&handled, method, controller_name = controller, route](auto &controller)
+            {
+                if (controller.name() == controller_name)
+                {
+                    handled |= controller.dispatch_handler(method, route);
+                }
+            });
+
+        if (!handled)
+        {
+            throw std::runtime_error(std::format("failed to handle request: {} {} {}", method, controller, route));
+        }
+    }
+
     std::tuple<Controllers...> controllers_;
 };
 

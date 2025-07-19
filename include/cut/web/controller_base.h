@@ -3,8 +3,6 @@
 #include <experimental/meta>
 #include <string_view>
 
-#include "cut/web/annotations.h"
-
 using namespace std::literals;
 
 namespace cut::web
@@ -24,7 +22,7 @@ class ControllerBase
     }
 
     template <class Self>
-    auto gets(this Self &&self)
+    auto dispatch_handler(this Self &&self, std::string_view method, std::string_view route) -> bool
     {
         using t = std::decay_t<Self>;
         static_assert(sizeof(t) > 0);
@@ -37,18 +35,22 @@ class ControllerBase
                 std::meta::is_function(info) && !std::meta::is_special_member_function(info) &&
                 !std::meta::is_constructor(info) && !std::meta::is_default_constructor(info))
             {
-                std::println("^^ {}", std::meta::display_string_of(info));
-                template for (constexpr auto annotation : std::define_static_array(std::meta::annotations_of(info)))
+                if (route == std::meta::display_string_of(info))
                 {
-                    std::println("** {}", std::meta::display_string_of(std::meta::type_of(annotation)));
-
-                    if (std::meta::display_string_of(std::meta::type_of(annotation)) == "Get"sv)
+                    template for (constexpr auto annotation : std::define_static_array(std::meta::annotations_of(info)))
                     {
-                        self.[:info:]();
+
+                        if (std::meta::display_string_of(std::meta::type_of(annotation)) == method)
+                        {
+                            self.[:info:]();
+                            return true;
+                        }
                     }
                 }
             }
         }
+
+        return false;
     }
 };
 

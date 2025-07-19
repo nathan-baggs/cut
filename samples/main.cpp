@@ -1,3 +1,4 @@
+#include <iostream>
 #include <print>
 
 #include "cut/web/annotations.h"
@@ -13,22 +14,39 @@ class MyController : public cut::web::ControllerBase
     [[=cut::web::Get]]
     auto get() -> void
     {
-        std::println("get called");
+        std::println("MyController get called");
+    }
+
+    auto another_method() -> void
+    {
     }
 };
-// clang-format on
 
 class AnotherController : public cut::web::ControllerBase
 {
   public:
     ~AnotherController() override = default;
+
+    [[=cut::web::Get]]
+    auto users() -> void
+    {
+        std::println("AnotherController users called");
+    }
 };
+// clang-format on
 
 auto main() -> int
 {
-    auto app = cut::web::App<MyController, AnotherController>{};
+    try
+    {
+        auto app = cut::web::App<MyController, AnotherController>{};
 
-    app.run();
+        app.run();
+    }
+    catch (std::runtime_error &e)
+    {
+        std::println(std::cerr, "{}", e.what());
+    }
 
     return 0;
 }
