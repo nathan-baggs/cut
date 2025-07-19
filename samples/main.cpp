@@ -1,3 +1,5 @@
+#include <print>
+
 #include "cut/web/app.h"
 #include "cut/web/controller_base.h"
 
@@ -5,6 +7,11 @@ class MyController : public cut::web::ControllerBase
 {
   public:
     ~MyController() override = default;
+
+    auto get() -> void
+    {
+        std::println("get called");
+    }
 };
 
 class AnotherController : public cut::web::ControllerBase
