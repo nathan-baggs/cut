@@ -49,15 +49,7 @@ class App
 
         std::println("simulating get");
 
-        details::Visitor<Controllers...>::visit(
-            controllers_,
-            [](auto &controller)
-            {
-                if constexpr (controller.name() == "MyController"sv)
-                {
-                    controller.get();
-                }
-            });
+        details::Visitor<Controllers...>::visit(controllers_, [](auto &controller) { controller.gets(); });
 
         std::println("running");
     }
