@@ -1,10 +1,23 @@
-import std;
-import std.compat;
+#include "cut/web/app.h"
+#include "cut/web/controller_base.h"
 
-import cut;
+class MyController : public cut::web::ControllerBase
+{
+  public:
+    ~MyController() override = default;
+};
+
+class AnotherController : public cut::web::ControllerBase
+{
+  public:
+    ~AnotherController() override = default;
+};
 
 auto main() -> int
 {
-    std::println("{}", cut::hello());
+    auto app = cut::web::App<MyController, AnotherController>{};
+
+    app.run();
+
     return 0;
 }

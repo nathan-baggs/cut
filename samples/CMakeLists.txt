@@ -3,9 +3,25 @@ add_executable(
   main.cpp
 )
 
-target_link_libraries(
+target_include_directories(
   sample
   PRIVATE
-  cut
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_features(
+  sample
+  PRIVATE
+    cxx_std_26
+)
+
+target_compile_options(
+  sample
+  PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Werror
+   -freflection-latest
 )
 
