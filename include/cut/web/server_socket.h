@@ -17,6 +17,7 @@
 #include "coro/event_loop.h"
 #include "utils/error.h"
 #include "utils/log.h"
+#include "web/client_socket.h"
 #include "web/socket.h"
 
 namespace cut::web
@@ -31,8 +32,8 @@ class ServerSocket : public Socket
         fd_ = {::socket(AF_INET, SOCK_STREAM, 0), ::close};
         utils::ensure(fd_, "could not create socket");
 
-        auto opt = 0;
-        const auto set_opt_res = ::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
+        auto opt = 1;
+        const auto set_opt_res = ::setsockopt(fd_, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof opt);
         utils::ensure(set_opt_res != -1, "could not set socket options");
 
         auto addr = sockaddr_in{
@@ -64,19 +65,22 @@ class ServerSocket : public Socket
 
             bool await_suspend(std::coroutine_handle<> handle)
             {
-                utils::log::debug("await suspend");
                 self.handle_ = handle;
                 return true;
             }
 
             auto await_resume()
             {
-                utils::log::debug("await resume");
                 ::sockaddr_in addr{};
                 ::socklen_t len = sizeof(addr);
 
                 const auto client = ::accept(self.fd_, reinterpret_cast<sockaddr *>(&addr), &len);
-                return client;
+                if (client == -1)
+                {
+                    throw std::runtime_error("failed to accept client");
+                }
+
+                return std::make_unique<ClientSocket>(client, self.ev_);
             }
 
             ServerSocket &self;

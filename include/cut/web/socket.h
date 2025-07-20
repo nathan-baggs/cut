@@ -1,6 +1,7 @@
 #pragma once
 
 #include <coroutine>
+#include <ranges>
 
 #include <unistd.h>
 
@@ -24,12 +25,15 @@ class Socket
 
     virtual ~Socket()
     {
-        ev_.unregister_socket(this);
+        if (fd_)
+        {
+            ev_.unregister_socket(this);
+        }
     }
 
     Socket(const Socket &) = delete;
     auto operator=(const Socket &) -> Socket & = delete;
-    Socket(Socket &&) = default;
+    Socket(Socket &&other) = default;
 
     auto native_handle() const -> int
     {
@@ -38,7 +42,6 @@ class Socket
 
     auto resume() const -> void
     {
-        utils::log::debug("socket resume");
         utils::expect(!!handle_, "invalid handle");
         handle_.resume();
     }

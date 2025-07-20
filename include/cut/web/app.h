@@ -59,15 +59,13 @@ class App
         auto ev = coro::EventLoop{};
         auto server_socket = ServerSocket{6375, ev};
 
-        const auto task = accept(server_socket);
+        accept(server_socket);
         ev.run();
     }
 
   private:
     auto handle_route(std::string_view method, std::string_view controller, std::string_view route)
     {
-        utils::log::info("handling {} {} {}", method, controller, route);
-
         auto handled = false;
 
         details::Visitor<Controllers...>::visit(
@@ -86,14 +84,34 @@ class App
         }
     }
 
+    auto read(std::unique_ptr<ClientSocket> client_socket) -> coro::Task
+    {
+        utils::log::info("new client: {}", client_socket->native_handle());
+
+        for (;;)
+        {
+            const auto data = co_await client_socket->read(1000);
+            utils::log::info("read {} bytes", data.size());
+
+            if (data.empty())
+            {
+                utils::log::info("client {} disconnected", client_socket->native_handle());
+                co_return;
+            }
+
+            auto data_str = std::string(data.data(), data.data() + data.size());
+            utils::log::info("{}", data_str);
+        }
+    }
+
     auto accept(ServerSocket &server_socket) -> coro::Task
     {
         utils::log::info("starting server loop");
 
         for (;;)
         {
-            const auto client = co_await server_socket.accept();
-            utils::log::info("client connected {}", client);
+            auto client = co_await server_socket.accept();
+            read(std::move(client));
         }
     }
 
