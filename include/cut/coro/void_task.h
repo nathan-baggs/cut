@@ -6,8 +6,7 @@
 namespace cut::coro
 {
 
-template <class T>
-class Task
+class VoidTask
 {
   public:
     struct promise_type
@@ -22,19 +21,13 @@ class Task
             return std::suspend_never{};
         }
 
-        auto return_value(T &&value)
+        auto return_void()
         {
-            if (exception_ptr)
-            {
-                std::rethrow_exception(exception_ptr);
-            }
-
-            this->value = std::move(value);
         }
 
         auto get_return_object()
         {
-            return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
+            return VoidTask{std::coroutine_handle<promise_type>::from_promise(*this)};
         }
 
         auto unhandled_exception()
@@ -43,7 +36,6 @@ class Task
         }
 
         std::exception_ptr exception_ptr = nullptr;
-        T value;
     };
 
     auto native_handle() -> std::coroutine_handle<promise_type>
@@ -52,7 +44,7 @@ class Task
     }
 
   private:
-    explicit Task(std::coroutine_handle<promise_type> handle)
+    explicit VoidTask(std::coroutine_handle<promise_type> handle)
         : handle_(handle)
     {
     }
