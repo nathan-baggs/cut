@@ -24,7 +24,6 @@ target_compile_options(
     -Wpedantic
     -Werror
     -freflection-latest
-    -fsanitize=address
 )
 
 
