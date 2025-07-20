@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string_view>
 #include <vector>
 
 #include <unistd.h>
@@ -19,6 +20,46 @@ class ClientSocket : public Socket
     {
         fd_ = {fd, ::close};
         ev_.register_socket(this);
+    }
+
+    auto read_until(std::string_view end)
+    {
+        struct Awaitable
+        {
+            bool await_ready()
+            {
+                return false;
+            }
+
+            bool await_suspend(std::coroutine_handle<> handle)
+            {
+                self.handle_ = handle;
+                return true;
+            }
+
+            auto await_resume()
+            {
+                auto buffer = std::string{};
+
+                while (!buffer.ends_with(end))
+                {
+                    auto c = char{};
+                    if (::read(self.fd_, &c, sizeof(c)) != 1)
+                    {
+                        throw std::runtime_error("failed to read bytes");
+                    }
+
+                    buffer.push_back(c);
+                }
+
+                return buffer;
+            }
+
+            ClientSocket &self;
+            std::string_view end;
+        };
+
+        return Awaitable{*this, end};
     }
 
     auto read(std::size_t num_bytes)
@@ -43,7 +84,7 @@ class ClientSocket : public Socket
                 const auto read_length = ::read(self.fd_, buffer.data(), buffer.size());
                 buffer.resize(read_length);
 
-                return buffer;
+                return std::string(buffer.data(), buffer.data() + buffer.size());
             }
 
             ClientSocket &self;
@@ -51,6 +92,12 @@ class ClientSocket : public Socket
         };
 
         return Awaitable{*this, num_bytes};
+    }
+
+    auto write(const std::string data) -> void
+    {
+        const auto write_amount = ::write(fd_, data.data(), data.size());
+        utils::ensure(static_cast<std::size_t>(write_amount) == data.size(), "failed to write response");
     }
 };
 }

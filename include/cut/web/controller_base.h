@@ -1,7 +1,10 @@
 #pragma once
 
 #include <experimental/meta>
+#include <optional>
 #include <string_view>
+
+#include "web/response.h"
 
 using namespace std::literals;
 
@@ -22,7 +25,7 @@ class ControllerBase
     }
 
     template <class Self>
-    auto dispatch_handler(this Self &&self, std::string_view method, std::string_view route) -> bool
+    auto dispatch_handler(this Self &&self, std::string_view method, std::string_view route) -> std::optional<Response>
     {
         using t = std::decay_t<Self>;
         static_assert(sizeof(t) > 0);
@@ -37,20 +40,25 @@ class ControllerBase
             {
                 if (route == std::meta::display_string_of(info))
                 {
-                    template for (constexpr auto annotation : std::define_static_array(std::meta::annotations_of(info)))
-                    {
+                    constexpr auto annotations = std::define_static_array(std::meta::annotations_of(info));
 
-                        if (std::meta::display_string_of(std::meta::type_of(annotation)) == method)
+                    if constexpr (!std::ranges::empty(annotations))
+                    {
+                        template for (constexpr auto annotation : annotations)
                         {
-                            self.[:info:]();
-                            return true;
+                            using A = typename[:std::meta::type_of(annotation):];
+
+                            if (A::method == method)
+                            {
+                                return {self.[:info:]().native_handle().promise().value};
+                            }
                         }
                     }
                 }
             }
         }
 
-        return false;
+        return std::nullopt;
     }
 };
 

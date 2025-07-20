@@ -2,15 +2,19 @@
 
 #include <csignal>
 #include <cstddef>
-#include <print>
 #include <ranges>
+#include <sstream>
+#include <stdexcept>
 #include <string_view>
-#include <sys/socket.h>
+#include <system_error>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 
+#include <sys/socket.h>
+
 #include "coro/event_loop.h"
-#include "coro/task.h"
+#include "coro/void_task.h"
 #include "utils/log.h"
 #include "web/server_socket.h"
 
@@ -64,47 +68,96 @@ class App
     }
 
   private:
-    auto handle_route(std::string_view method, std::string_view controller, std::string_view route)
+    auto handle_route(std::string_view method, std::string_view controller, std::string_view route) -> std::string
     {
-        auto handled = false;
+        utils::log::debug("handling {} {} {}", method, controller, route);
+
+        auto response_str = std::string{};
 
         details::Visitor<Controllers...>::visit(
             controllers_,
-            [&handled, method, controller_name = controller, route](auto &controller)
+            [&response_str, method, controller_name = controller, route](auto &controller)
             {
                 if (controller.name() == controller_name)
                 {
-                    handled |= controller.dispatch_handler(method, route);
+                    if (const auto response = controller.dispatch_handler(method, route); response)
+                    {
+                        auto strm = std::stringstream{};
+                        strm << std::format("HTTP/1.1 {} {}\r\n", response->code, code_to_str(*response));
+                        strm << std::format("Content-Length: {}\r\n", response->response.length());
+                        strm << "\r\n";
+                        strm << response->response;
+
+                        response_str = strm.str();
+                    }
                 }
             });
 
-        if (!handled)
+        if (response_str.empty())
         {
             throw std::runtime_error(std::format("failed to handle request: {} {} {}", method, controller, route));
         }
+
+        return response_str;
     }
 
-    auto read(std::unique_ptr<ClientSocket> client_socket) -> coro::Task
+    auto read(std::unique_ptr<ClientSocket> client_socket) -> coro::VoidTask
     {
         utils::log::info("new client: {}", client_socket->native_handle());
 
         for (;;)
         {
-            const auto data = co_await client_socket->read(1000);
-            utils::log::info("read {} bytes", data.size());
+            auto headers = std::vector<std::tuple<std::string, std::string>>{};
 
-            if (data.empty())
+            const auto request_line = co_await client_socket->read_until("\r\n"sv);
+
+            for (;;)
             {
-                utils::log::info("client {} disconnected", client_socket->native_handle());
-                co_return;
+                const auto header = co_await client_socket->read_until("\r\n"sv);
+                const auto colon_index = header.find(':');
+
+                if (header == "\r\n"sv)
+                {
+                    break;
+                }
+
+                if (colon_index == std::string::npos)
+                {
+                    throw std::runtime_error("invalid header");
+                }
+
+                headers.emplace_back(
+                    header.substr(0u, colon_index),
+                    header.substr(colon_index + 1u, header.length() - colon_index - 3u));
             }
 
-            auto data_str = std::string(data.data(), data.data() + data.size());
-            utils::log::info("{}", data_str);
+            const auto request_line_parts = request_line | std::views::split(' ') | std::ranges::to<std::vector>();
+            if (std::ranges::size(request_line_parts) != 3)
+            {
+                throw std::runtime_error("invalid request line");
+            }
+
+            const auto route_parts = request_line_parts[1] | std::views::split('/') | std::ranges::to<std::vector>();
+            if (std::ranges::size(route_parts) != 3)
+            {
+                throw std::runtime_error("invalid request line (route)");
+            }
+
+            utils::log::info("request line: {}", request_line);
+            utils::log::info("headers: {}", headers);
+
+            const auto response_str = handle_route(
+                std::string_view{request_line_parts[0]},
+                std::string_view{route_parts[1]},
+                std::string_view{route_parts[2]});
+
+            utils::log::info("sending response: {}", response_str);
+
+            client_socket->write(response_str);
         }
     }
 
-    auto accept(ServerSocket &server_socket) -> coro::Task
+    auto accept(ServerSocket &server_socket) -> coro::VoidTask
     {
         utils::log::info("starting server loop");
 
