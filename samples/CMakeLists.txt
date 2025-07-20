@@ -24,10 +24,17 @@ target_compile_options(
     -Wpedantic
     -Werror
     -freflection-latest
+    -fsanitize=address
 )
 
 target_link_libraries(
   sample
   PUBLIC
     cut
+)
+
+target_link_options(
+  sample
+  PRIVATE
+    -fsanitize=address
 )
