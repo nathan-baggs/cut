@@ -5,8 +5,14 @@
 #include <print>
 #include <ranges>
 #include <string_view>
+#include <sys/socket.h>
 #include <tuple>
 #include <utility>
+
+#include "coro/event_loop.h"
+#include "coro/task.h"
+#include "utils/log.h"
+#include "web/server_socket.h"
 
 using namespace std::literals;
 
@@ -46,21 +52,21 @@ class App
     auto run()
     {
         details::Visitor<Controllers...>::visit(
-            controllers_, [](auto &controller) { std::println("{} registered", controller.name()); });
+            controllers_, [](auto &controller) { utils::log::info("{} registered", controller.name()); });
 
-        std::println("simulating get");
+        utils::log::info("running");
 
-        handle_route("Get", "MyController", "get");
-        handle_route("Get", "AnotherController", "users");
-        handle_route("Get", "AnotherController", "users2");
+        auto ev = coro::EventLoop{};
+        auto server_socket = ServerSocket{6375, ev};
 
-        std::println("running");
+        const auto task = accept(server_socket);
+        ev.run();
     }
 
   private:
     auto handle_route(std::string_view method, std::string_view controller, std::string_view route)
     {
-        std::println("handling {} {} {}", method, controller, route);
+        utils::log::info("handling {} {} {}", method, controller, route);
 
         auto handled = false;
 
@@ -77,6 +83,17 @@ class App
         if (!handled)
         {
             throw std::runtime_error(std::format("failed to handle request: {} {} {}", method, controller, route));
+        }
+    }
+
+    auto accept(ServerSocket &server_socket) -> coro::Task
+    {
+        utils::log::info("starting server loop");
+
+        for (;;)
+        {
+            const auto client = co_await server_socket.accept();
+            utils::log::info("client connected {}", client);
         }
     }
 
