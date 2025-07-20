@@ -1,20 +1,24 @@
 #include <iostream>
 #include <print>
 
+#include "cut/coro/task.h"
 #include "cut/web/annotations.h"
 #include "cut/web/app.h"
 #include "cut/web/controller_base.h"
+#include "cut/web/response.h"
 
 // clang-format off
-class MyController : public cut::web::ControllerBase
+class Foo : public cut::web::ControllerBase
 {
   public:
-    ~MyController() override = default;
+    ~Foo() override = default;
 
     [[=cut::web::Get]]
-    auto get() -> void
+    auto my_route() -> cut::coro::Task<cut::web::Response>
     {
-        std::println("MyController get called");
+        std::println("Foo get called");
+
+        co_return cut::web::Ok("hello world");
     }
 
     auto another_method() -> void
@@ -28,9 +32,11 @@ class AnotherController : public cut::web::ControllerBase
     ~AnotherController() override = default;
 
     [[=cut::web::Get]]
-    auto users() -> void
+    auto users() -> cut::coro::Task<cut::web::Response>
     {
         std::println("AnotherController users called");
+
+        co_return cut::web::Ok();
     }
 };
 // clang-format on
@@ -39,7 +45,7 @@ auto main() -> int
 {
     try
     {
-        auto app = cut::web::App<MyController, AnotherController>{};
+        auto app = cut::web::App<Foo, AnotherController>{};
 
         app.run();
     }
