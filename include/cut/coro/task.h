@@ -21,7 +21,7 @@ class Task
 
         auto final_suspend() noexcept
         {
-            return std::suspend_always{};
+            return std::suspend_never{};
         }
 
         auto return_void()
@@ -40,44 +40,6 @@ class Task
 
         std::exception_ptr exception_ptr = nullptr;
     };
-
-    ~Task()
-    {
-        utils::log::debug("~Task()");
-
-        if (handle_)
-        {
-            handle_.destroy();
-        }
-    }
-
-    Task(const Task &) = delete;
-    auto operator=(const Task &) -> Task & = delete;
-    Task(Task &&other)
-        : handle_(std::exchange(other.handle_, nullptr))
-    {
-    }
-
-    auto operator=(Task &&other) -> Task &
-    {
-        std::ranges::swap(handle_, other.handle_);
-        return *this;
-    }
-
-    auto resume() -> void
-    {
-        handle_.resume();
-
-        if (handle_ && handle_.promise().exception_ptr)
-        {
-            std::rethrow_exception(handle_.promise().exception_ptr);
-        }
-    }
-
-    auto native_handle() const -> std::coroutine_handle<>
-    {
-        return handle_;
-    }
 
   private:
     explicit Task(std::coroutine_handle<promise_type> handle)
