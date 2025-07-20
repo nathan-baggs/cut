@@ -6,7 +6,8 @@ add_executable(
 target_include_directories(
   sample
   PRIVATE
-    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include/
+    ${PROJECT_SOURCE_DIR}/include/cut
 )
 
 target_compile_features(
@@ -22,6 +23,11 @@ target_compile_options(
     -Wextra
     -Wpedantic
     -Werror
-   -freflection-latest
+    -freflection-latest
 )
 
+target_link_libraries(
+  sample
+  PUBLIC
+    cut
+)
