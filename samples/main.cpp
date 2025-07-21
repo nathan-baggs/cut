@@ -21,6 +21,14 @@ class Foo : public cut::web::ControllerBase
         co_return cut::web::Ok("hello world");
     }
 
+    [[=cut::web::Post]]
+    auto greeting() -> cut::coro::Task<cut::web::Response>
+    {
+        std::println("Foo greeting called");
+
+        co_return cut::web::Ok("who are you?");
+    }
+
     auto another_method() -> void
     {
     }
