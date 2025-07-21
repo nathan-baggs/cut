@@ -1,10 +1,9 @@
 #pragma once
 
 #include <format>
+#include <map>
 #include <optional>
 #include <string>
-#include <tuple>
-#include <vector>
 
 namespace cut::web
 {
@@ -14,7 +13,7 @@ struct Request
     std::string method;
     std::string controller;
     std::string route;
-    std::vector<std::tuple<std::string, std::string>> headers;
+    std::map<std::string, std::string> headers;
     std::optional<std::string> body;
 };
 

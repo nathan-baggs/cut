@@ -2,16 +2,13 @@
 
 #include <csignal>
 #include <cstddef>
+#include <map>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
-#include <system_error>
 #include <tuple>
-#include <unordered_set>
 #include <utility>
-
-#include <sys/socket.h>
 
 #include "coro/event_loop.h"
 #include "coro/void_task.h"
@@ -19,6 +16,7 @@
 #include "utils/log.h"
 #include "web/request.h"
 #include "web/server_socket.h"
+#include <sys/socket.h>
 
 using namespace std::literals;
 
@@ -111,7 +109,7 @@ class App
 
         for (;;)
         {
-            auto headers = std::vector<std::tuple<std::string, std::string>>{};
+            auto headers = std::map<std::string, std::string>{};
 
             const auto request_line = co_await client_socket->read_until("\r\n"sv);
 
@@ -130,9 +128,16 @@ class App
                     throw std::runtime_error("invalid header");
                 }
 
-                headers.emplace_back(
+                headers.emplace(
                     header.substr(0u, colon_index),
                     header.substr(colon_index + 1u, header.length() - colon_index - 3u));
+            }
+
+            auto body = std::optional<std::string>{};
+
+            if (const auto content_length = headers.find("Content-Length"); content_length != std::cend(headers))
+            {
+                body = co_await client_socket->read(std::stoi(content_length->second));
             }
 
             const auto request_line_parts =
@@ -160,7 +165,7 @@ class App
                  .controller = std::ranges::data(route_parts[1]),
                  .route = std::ranges::data(route_parts[2]),
                  .headers = std::move(headers),
-                 .body = std::nullopt});
+                 .body = std::move(body)});
 
             utils::log::info("sending response: {}", response_str);
 
