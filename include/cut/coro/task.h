@@ -19,7 +19,7 @@ class Task
 
         auto final_suspend() noexcept
         {
-            return std::suspend_never{};
+            return std::suspend_always{};
         }
 
         auto return_value(T &&value)
@@ -51,6 +51,14 @@ class Task
         return handle_;
     }
 
+    ~Task()
+    {
+        if (handle_)
+        {
+            handle_.destroy();
+        }
+    }
+
   private:
     explicit Task(std::coroutine_handle<promise_type> handle)
         : handle_(handle)
@@ -59,5 +67,4 @@ class Task
 
     std::coroutine_handle<promise_type> handle_;
 };
-
 }
