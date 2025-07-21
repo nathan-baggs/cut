@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "cut/coro/task.h"
+#include "cut/db/db.h"
 #include "cut/web/annotations.h"
 #include "cut/web/app.h"
 #include "cut/web/controller_base.h"
@@ -26,6 +27,8 @@ struct Record
 class Foo : public cut::web::ControllerBase
 {
   public:
+    Foo(cut::db::Db *db) : db_(db){}
+
     ~Foo() override = default;
 
     [[=cut::web::Get]]
@@ -49,17 +52,23 @@ class Foo : public cut::web::ControllerBase
     {
         std::println("Foo record called");
 
-        co_return cut::web::Ok(Record{.person = person, .id = 100});
+        const auto id = co_await db_->test();
+
+        co_return cut::web::Ok(Record{.person = person, .id = id});
     }
 
     auto another_method() -> void
     {
     }
+    
+private:
+    cut::db::Db *db_;
 };
 
 class AnotherController : public cut::web::ControllerBase
 {
   public:
+    AnotherController(){}
     ~AnotherController() override = default;
 
     [[=cut::web::Get]]

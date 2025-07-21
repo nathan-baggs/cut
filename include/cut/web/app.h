@@ -12,17 +12,52 @@
 
 #include "coro/event_loop.h"
 #include "coro/void_task.h"
+#include "cut/di/injector.h"
+#include "db/db.h"
+#include "db/fake_db.h"
 #include "utils/formatter.h"
 #include "utils/log.h"
 #include "utils/type_list.h"
 #include "web/request.h"
 #include "web/server_socket.h"
-#include <sys/socket.h>
 
 using namespace std::literals;
 
 namespace cut::web
 {
+namespace details
+{
+template <class T>
+struct Visitor;
+
+template <class Head, class... Tail>
+struct Visitor<utils::TypeList<Head, Tail...>>
+{
+    template <class I, class F>
+    static auto visit(const I &injector, F &&f)
+    {
+        f(injector.template create<Head>());
+
+        Visitor<utils::TypeList<Tail...>>::visit(injector, std::forward<F>(f));
+    }
+};
+
+template <class Head>
+struct Visitor<utils::TypeList<Head>>
+{
+    template <class I, class F>
+    static auto visit(const I &injector, F &&f)
+    {
+        f(injector.template create<Head>());
+    }
+};
+
+template <class F, class I, class... Ts>
+auto visit(utils::TypeList<Ts...>, const I &injector, F &&f)
+{
+    Visitor<utils::TypeList<Ts...>>::visit(injector, std::forward<F>(f));
+}
+}
 
 template <class... Controllers>
 class App
@@ -39,7 +74,8 @@ class App
     {
         static constexpr auto port = std::uint16_t{6375};
 
-        utils::visit(controllers_, [](auto &&controller) { utils::log::info("{} registered", controller.name()); });
+        details::visit(
+            controllers_, injector_, [](auto &&controller) { utils::log::info("{} registered", controller.name()); });
 
         utils::log::info("running on localhost:{}", port);
 
@@ -57,8 +93,9 @@ class App
 
         auto response_str = std::string{};
 
-        utils::visit(
+        details::visit(
             controllers_,
+            injector_,
             [&response_str, &request](auto &&controller)
             {
                 if (controller.name() == request.controller)
@@ -166,6 +203,7 @@ class App
     }
 
     utils::TypeList<Controllers...> controllers_;
+    constexpr static di::Injector<utils::TypeList<db::Db>, utils::TypeList<db::FakeDb>> injector_;
 };
 
 }
