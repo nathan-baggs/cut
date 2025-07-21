@@ -1,5 +1,6 @@
 #include <iostream>
 #include <print>
+#include <string_view>
 
 #include "cut/coro/task.h"
 #include "cut/web/annotations.h"
@@ -7,10 +8,18 @@
 #include "cut/web/controller_base.h"
 #include "cut/web/response.h"
 
+using namespace std::literals;
+
 struct Person
 {
     std::string first_name;
     std::string last_name;
+};
+
+struct Record
+{
+    Person person;
+    int id;
 };
 
 // clang-format off
@@ -24,7 +33,7 @@ class Foo : public cut::web::ControllerBase
     {
         std::println("Foo get called");
 
-        co_return cut::web::Ok("hello world");
+        co_return cut::web::Ok("hello world"sv);
     }
 
     [[=cut::web::Post]]
@@ -33,6 +42,14 @@ class Foo : public cut::web::ControllerBase
         std::println("Foo greeting called");
 
         co_return cut::web::Ok(std::format("hello {} {}", person.first_name, person.last_name));
+    }
+
+    [[=cut::web::Post]]
+    auto record(Person person) -> cut::coro::Task<cut::web::Response>
+    {
+        std::println("Foo record called");
+
+        co_return cut::web::Ok(Record{.person = person, .id = 100});
     }
 
     auto another_method() -> void
