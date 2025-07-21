@@ -72,7 +72,7 @@ class App
   private:
     auto handle_request(const Request &request) -> std::string
     {
-        utils::log::debug("handling {}", request);
+        utils::log::info("handling {}", request);
 
         auto response_str = std::string{};
 
