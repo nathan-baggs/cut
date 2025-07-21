@@ -82,7 +82,7 @@ class App
             {
                 if (controller.name() == request.controller)
                 {
-                    if (const auto response = controller.dispatch_handler(request.method, request.route); response)
+                    if (const auto response = controller.dispatch_handler(request); response)
                     {
                         auto strm = std::stringstream{};
                         strm << std::format("HTTP/1.1 {} {}\r\n", response->code, code_to_str(*response));
