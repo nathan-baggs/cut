@@ -7,6 +7,12 @@
 #include "cut/web/controller_base.h"
 #include "cut/web/response.h"
 
+struct Person
+{
+    std::string first_name;
+    std::string last_name;
+};
+
 // clang-format off
 class Foo : public cut::web::ControllerBase
 {
@@ -22,11 +28,11 @@ class Foo : public cut::web::ControllerBase
     }
 
     [[=cut::web::Post]]
-    auto greeting() -> cut::coro::Task<cut::web::Response>
+    auto greeting(Person person) -> cut::coro::Task<cut::web::Response>
     {
         std::println("Foo greeting called");
 
-        co_return cut::web::Ok("who are you?");
+        co_return cut::web::Ok(std::format("hello {} {}", person.first_name, person.last_name));
     }
 
     auto another_method() -> void
