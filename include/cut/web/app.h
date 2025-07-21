@@ -57,13 +57,15 @@ class App
 
     auto run()
     {
+        static constexpr auto port = std::uint16_t{6375};
+
         details::Visitor<Controllers...>::visit(
             controllers_, [](auto &controller) { utils::log::info("{} registered", controller.name()); });
 
-        utils::log::info("running");
+        utils::log::info("running on localhost:{}", port);
 
         auto ev = coro::EventLoop{};
-        auto server_socket = ServerSocket{6375, ev};
+        auto server_socket = ServerSocket{port, ev};
 
         accept(server_socket);
         ev.run();
