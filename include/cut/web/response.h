@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string>
 
+#include "utils/json.h"
+
 namespace cut::web
 {
 
@@ -12,14 +14,15 @@ struct Response
     std::string response;
 };
 
-inline constexpr auto Ok() -> Response
+constexpr auto Ok() -> Response
 {
-    return {.code = 200, .response = {}};
+    return {.code = 200, .response = ""};
 }
 
-inline constexpr auto Ok(std::string response) -> Response
+template <class T>
+constexpr auto Ok(T &&obj) -> Response
 {
-    return {.code = 200, .response = std::move(response)};
+    return {.code = 200, .response = utils::to_json<T>(obj)};
 }
 
 inline constexpr auto code_to_str(const Response &response) -> std::string
