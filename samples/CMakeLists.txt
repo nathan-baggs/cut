@@ -3,13 +3,6 @@ add_executable(
   main.cpp
 )
 
-target_include_directories(
-  sample
-  PRIVATE
-    ${PROJECT_SOURCE_DIR}/include/
-    ${PROJECT_SOURCE_DIR}/include/cut
-)
-
 target_compile_features(
   sample
   PRIVATE

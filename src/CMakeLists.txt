@@ -5,9 +5,10 @@ add_library(
 
 target_include_directories(
   cut
-  PRIVATE
+  PUBLIC
     ${PROJECT_SOURCE_DIR}/include/
     ${PROJECT_SOURCE_DIR}/include/cut
+    ${PROJECT_SOURCE_DIR}/third_party
 )
 
 target_compile_features(
