@@ -14,6 +14,7 @@
 #include "coro/void_task.h"
 #include "utils/formatter.h"
 #include "utils/log.h"
+#include "utils/type_list.h"
 #include "web/request.h"
 #include "web/server_socket.h"
 #include <sys/socket.h>
@@ -22,25 +23,6 @@ using namespace std::literals;
 
 namespace cut::web
 {
-
-namespace details
-{
-
-template <class... Controllers>
-struct Visitor
-{
-    template <class F>
-    static constexpr auto visit(std::tuple<Controllers...> &controllers, F &&f)
-    {
-        template for (constexpr auto i : std::views::iota(0zu, sizeof...(Controllers)))
-        {
-            auto controller = std::get<i>(controllers);
-            f(controller);
-        }
-    }
-};
-
-}
 
 template <class... Controllers>
 class App
@@ -57,8 +39,7 @@ class App
     {
         static constexpr auto port = std::uint16_t{6375};
 
-        details::Visitor<Controllers...>::visit(
-            controllers_, [](auto &controller) { utils::log::info("{} registered", controller.name()); });
+        utils::visit(controllers_, [](auto &&controller) { utils::log::info("{} registered", controller.name()); });
 
         utils::log::info("running on localhost:{}", port);
 
@@ -76,9 +57,9 @@ class App
 
         auto response_str = std::string{};
 
-        details::Visitor<Controllers...>::visit(
+        utils::visit(
             controllers_,
-            [&response_str, &request](auto &controller)
+            [&response_str, &request](auto &&controller)
             {
                 if (controller.name() == request.controller)
                 {
@@ -184,7 +165,7 @@ class App
         }
     }
 
-    std::tuple<Controllers...> controllers_;
+    utils::TypeList<Controllers...> controllers_;
 };
 
 }
