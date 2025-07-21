@@ -15,7 +15,9 @@
 
 #include "coro/event_loop.h"
 #include "coro/void_task.h"
+#include "utils/formatter.h"
 #include "utils/log.h"
+#include "web/request.h"
 #include "web/server_socket.h"
 
 using namespace std::literals;
@@ -68,19 +70,19 @@ class App
     }
 
   private:
-    auto handle_route(std::string_view method, std::string_view controller, std::string_view route) -> std::string
+    auto handle_request(const Request &request) -> std::string
     {
-        utils::log::debug("handling {} {} {}", method, controller, route);
+        utils::log::debug("handling {}", request);
 
         auto response_str = std::string{};
 
         details::Visitor<Controllers...>::visit(
             controllers_,
-            [&response_str, method, controller_name = controller, route](auto &controller)
+            [&response_str, &request](auto &controller)
             {
-                if (controller.name() == controller_name)
+                if (controller.name() == request.controller)
                 {
-                    if (const auto response = controller.dispatch_handler(method, route); response)
+                    if (const auto response = controller.dispatch_handler(request.method, request.route); response)
                     {
                         auto strm = std::stringstream{};
                         strm << std::format("HTTP/1.1 {} {}\r\n", response->code, code_to_str(*response));
@@ -95,7 +97,7 @@ class App
 
         if (response_str.empty())
         {
-            throw std::runtime_error(std::format("failed to handle request: {} {} {}", method, controller, route));
+            throw std::runtime_error(std::format("failed to handle request: {}", request));
         }
 
         return response_str;
@@ -131,25 +133,32 @@ class App
                     header.substr(colon_index + 1u, header.length() - colon_index - 3u));
             }
 
-            const auto request_line_parts = request_line | std::views::split(' ') | std::ranges::to<std::vector>();
+            const auto request_line_parts =
+                request_line | std::views::split(' ') |
+                std::views::transform([](const auto &e)
+                                      { return std::string(std::ranges::cbegin(e), std::ranges::cend(e)); }) |
+                std::ranges::to<std::vector>();
             if (std::ranges::size(request_line_parts) != 3)
             {
                 throw std::runtime_error("invalid request line");
             }
 
-            const auto route_parts = request_line_parts[1] | std::views::split('/') | std::ranges::to<std::vector>();
+            const auto route_parts =
+                request_line_parts[1] | std::views::split('/') |
+                std::views::transform([](const auto &e)
+                                      { return std::string(std::ranges::cbegin(e), std::ranges::cend(e)); }) |
+                std::ranges::to<std::vector>();
             if (std::ranges::size(route_parts) != 3)
             {
                 throw std::runtime_error("invalid request line (route)");
             }
 
-            utils::log::info("request line: {}", request_line);
-            utils::log::info("headers: {}", headers);
-
-            const auto response_str = handle_route(
-                std::string_view{request_line_parts[0]},
-                std::string_view{route_parts[1]},
-                std::string_view{route_parts[2]});
+            const auto response_str = handle_request(
+                {.method = request_line_parts[0],
+                 .controller = std::ranges::data(route_parts[1]),
+                 .route = std::ranges::data(route_parts[2]),
+                 .headers = std::move(headers),
+                 .body = std::nullopt});
 
             utils::log::info("sending response: {}", response_str);
 
