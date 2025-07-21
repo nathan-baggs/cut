@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <string>
 
@@ -7,6 +8,12 @@
 
 namespace cut::web
 {
+
+namespace details
+{
+template <class T>
+concept StringIsh = std::convertible_to<T, std::string>;
+}
 
 struct Response
 {
@@ -22,7 +29,14 @@ constexpr auto Ok() -> Response
 template <class T>
 constexpr auto Ok(T &&obj) -> Response
 {
-    return {.code = 200, .response = utils::to_json<T>(obj)};
+    if constexpr (details::StringIsh<T>)
+    {
+        return {.code = 200, .response = obj};
+    }
+    else
+    {
+        return {.code = 200, .response = utils::to_json<T>(obj)};
+    }
 }
 
 inline constexpr auto code_to_str(const Response &response) -> std::string

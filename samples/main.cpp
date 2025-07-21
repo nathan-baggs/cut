@@ -33,7 +33,7 @@ class Foo : public cut::web::ControllerBase
     {
         std::println("Foo get called");
 
-        co_return cut::web::Ok("hello world"sv);
+        co_return cut::web::Ok("hello world");
     }
 
     [[=cut::web::Post]]
