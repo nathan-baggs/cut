@@ -3,6 +3,8 @@
 #include <coroutine>
 #include <exception>
 
+#include "utils/log.h"
+
 namespace cut::coro
 {
 
@@ -39,6 +41,7 @@ class Task
 
         auto unhandled_exception()
         {
+            utils::log::warn("unhandled exception");
             exception_ptr = std::current_exception();
         }
 
