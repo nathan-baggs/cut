@@ -36,6 +36,7 @@ auto ensure(bool predicate, std::format_string<Args...> msg, Args &&...args) -> 
 {
     if (!predicate)
     {
+        log::error("{}", std::format(msg, std::forward<Args>(args)...));
         throw std::runtime_error(std::format(msg, std::forward<Args>(args)...));
     }
 }
