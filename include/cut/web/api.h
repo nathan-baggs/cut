@@ -66,12 +66,15 @@ auto parse_paths(std::map<std::string, Path> &paths)
                 template for (constexpr auto annotation : annotations)
                 {
                     using A = typename[:std::meta::type_of(annotation):];
+                    const auto method = A::method | std::views::transform([](auto e) { return std::tolower(e); }) |
+                                        std::ranges::to<std::string>();
+                    
 
-                    paths[std::format(
-                              "/{}/{}",
-                              std::meta::display_string_of(^^Controller),
-                              std::meta::display_string_of(member))]
-                        .methods["get"] = Method{
+                        paths[std::format(
+                                  "/{}/{}",
+                                  std::meta::display_string_of(^^Controller),
+                                  std::meta::display_string_of(member))]
+                            .methods[method] = Method{
                         .summary = std::string(std::meta::display_string_of(member)),
                         .operationId = std::string(std::meta::display_string_of(member))};
                 }
