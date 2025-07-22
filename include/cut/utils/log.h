@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <format>
+#include <iostream>
 #include <print>
 #include <source_location>
 
@@ -45,6 +46,7 @@ struct Print
             "[{}] {}:{} {}", c, path.filename().string(), loc.line(), std::format(msg, std::forward<Args>(args)...));
 
         std::println("{}", log_line);
+        std::cout << std::flush;
     }
 };
 
