@@ -18,6 +18,7 @@
 #include "utils/formatter.h"
 #include "utils/log.h"
 #include "utils/type_list.h"
+#include "web/api.h"
 #include "web/request.h"
 #include "web/server_socket.h"
 
@@ -93,25 +94,40 @@ class App
 
         auto response_str = std::string{};
 
-        details::visit(
-            controllers_,
-            injector_,
-            [&response_str, &request](auto &&controller)
-            {
-                if (controller.name() == request.controller)
-                {
-                    if (const auto response = controller.dispatch_handler(request); response)
-                    {
-                        auto strm = std::stringstream{};
-                        strm << std::format("HTTP/1.1 {} {}\r\n", response->code, code_to_str(*response));
-                        strm << std::format("Content-Length: {}\r\n", response->response.length());
-                        strm << "\r\n";
-                        strm << response->response;
+        if (request.method == "GET" && request.controller == "api" && request.route == "json")
+        {
+            const auto response = json_api<Controllers...>();
+            auto strm = std::stringstream{};
+            strm << std::format("HTTP/1.1 {} {}\r\n", response.code, code_to_str(response));
+            strm << "Access-Control-Allow-Origin: *\r\n";
+            strm << std::format("Content-Length: {}\r\n", response.response.length());
+            strm << "\r\n";
+            strm << response.response;
 
-                        response_str = strm.str();
+            response_str = strm.str();
+        }
+        else
+        {
+            details::visit(
+                controllers_,
+                injector_,
+                [&response_str, &request](auto &&controller)
+                {
+                    if (controller.name() == request.controller)
+                    {
+                        if (const auto response = controller.dispatch_handler(request); response)
+                        {
+                            auto strm = std::stringstream{};
+                            strm << std::format("HTTP/1.1 {} {}\r\n", response->code, code_to_str(*response));
+                            strm << std::format("Content-Length: {}\r\n", response->response.length());
+                            strm << "\r\n";
+                            strm << response->response;
+
+                            response_str = strm.str();
+                        }
                     }
-                }
-            });
+                });
+        }
 
         if (response_str.empty())
         {
@@ -130,6 +146,7 @@ class App
             auto headers = std::map<std::string, std::string>{};
 
             const auto request_line = co_await client_socket->read_until("\r\n"sv);
+            utils::log::debug("request line {}", request_line);
 
             for (;;)
             {
