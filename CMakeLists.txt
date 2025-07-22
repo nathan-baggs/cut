@@ -6,7 +6,7 @@ project(
   cut
   VERSION "0.0.1"
   DESCRIPTION "bleeding edge http server"
-  LANGUAGES CXX
+  LANGUAGES C CXX
 )
 
 add_subdirectory(src)

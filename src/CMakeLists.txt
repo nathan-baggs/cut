@@ -1,6 +1,7 @@
 add_library(
   cut
   coro/event_loop.cpp
+  ${PROJECT_SOURCE_DIR}/third_party/sqlite3/sqlite3.c
 )
 
 target_include_directories(
