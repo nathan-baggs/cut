@@ -11,11 +11,20 @@
 namespace cut::db
 {
 
+/**
+ * Implementation of Db for Sqlite3.
+ */
 class Sqlite3Db : public Db
 {
   public:
     ~Sqlite3Db() override = default;
 
+    /**
+     * Execute SQL in an API specific way.
+     *
+     * @param sql
+     *   The SQL to execute.
+     */
     auto execute(const std::string &sql) -> void override
     {
         utils::log::info("will execute: {}", sql);
