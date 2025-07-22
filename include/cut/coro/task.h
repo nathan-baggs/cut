@@ -8,6 +8,9 @@
 namespace cut::coro
 {
 
+/**
+ * Basic coroutine task that starts unsuspended and ends suspended. Can return a value (of type T).
+ */
 template <class T>
 class Task
 {

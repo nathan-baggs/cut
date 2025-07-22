@@ -6,6 +6,9 @@
 namespace cut::coro
 {
 
+/**
+ * Basic coroutine task that starts unsuspended and ends unsuspended.
+ */
 class VoidTask
 {
   public:

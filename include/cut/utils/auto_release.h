@@ -21,6 +21,7 @@ class AutoRelease
     {
     }
 
+    /**
     AutoRelease(T obj, std::function<void(T)> deleter)
         : obj_(obj)
         , deleter_(deleter)
@@ -94,3 +95,5 @@ class AutoRelease
 };
 
 }
+
+
