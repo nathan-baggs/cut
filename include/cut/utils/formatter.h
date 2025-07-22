@@ -20,6 +20,7 @@ concept HasToStringFree = requires(T a) {
 namespace details
 {
 
+// CPO to find and call to_string
 struct ToStringCPO
 {
     template <HasToStringMember T>
@@ -40,6 +41,7 @@ inline constexpr auto to_string = ToStringCPO{};
 
 }
 
+// actual implementation of the formatter
 template <class T>
 struct Formatter
 {
@@ -55,11 +57,17 @@ struct Formatter
 };
 }
 
+// concept to check if a type can be formatted
 template <class T>
 concept CanFormat = requires(T a) {
     { cut::utils::details::to_string(a) } -> std::convertible_to<std::string>;
 };
 
+/**
+ * A generic specialisation of std::formatter for any type that has a to_string method or a free function to_string.
+ *
+ * Look above for implementation details but it uses CPO to find the correct to_string function.
+ */
 template <CanFormat T>
 struct std::formatter<T> : cut::utils::Formatter<T>
 {
