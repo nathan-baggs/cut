@@ -34,10 +34,25 @@ class Injector;
 template <class P>
 using Underlying = std::remove_pointer_t<P>;
 
+/**
+ * Perform dependency injection via reflection.
+ *
+ * Can create an object by automatically finding its ctor params, mapping them to derived classes and then passing them
+ * in.
+ *
+ * Note that derived classes are only created once, each created object gets the same dependency.
+ *
+ * Not a massive fan of constructing with a TypeList of Base then TypeList of matching Derived - but it works for now.
+ *
+ * This was the first reflection code I wrote - so could be a bit shaky.
+ */
 template <class... T, class... S>
 class Injector<utils::TypeList<T...>, utils::TypeList<S...>>
 {
   public:
+    /**
+     * Create a C, dependency inject it's ctor params.
+     */
     template <class C>
     constexpr auto create() const
     {
@@ -45,6 +60,9 @@ class Injector<utils::TypeList<T...>, utils::TypeList<S...>>
     }
 
   private:
+    /**
+     * Convert the ctor params of C into a TypeList (mapping bae to derived).
+     */
     template <class C>
     constexpr auto create_type_list() const
     {
@@ -68,9 +86,11 @@ class Injector<utils::TypeList<T...>, utils::TypeList<S...>>
 
         using d = typename[:derived[std::ranges::distance(std::ranges::cbegin(base), element)]:];
 
+        // i'd like to not have to construct d here
         return d{};
     }
 
+    // convert the typelists to arrays of meta infos
     static constexpr auto base = std::define_static_array(std::vector<std::meta::info>{^^T...});
     static constexpr auto derived = std::define_static_array(std::vector<std::meta::info>{^^S...});
 };
