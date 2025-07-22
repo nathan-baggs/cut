@@ -14,7 +14,7 @@
 #include "coro/void_task.h"
 #include "cut/di/injector.h"
 #include "db/db.h"
-#include "db/fake_db.h"
+#include "db/sqlite3_db.h"
 #include "utils/formatter.h"
 #include "utils/log.h"
 #include "utils/type_list.h"
@@ -220,7 +220,7 @@ class App
     }
 
     utils::TypeList<Controllers...> controllers_;
-    constexpr static di::Injector<utils::TypeList<db::Db>, utils::TypeList<db::FakeDb>> injector_;
+    constexpr static di::Injector<utils::TypeList<db::Db>, utils::TypeList<db::Sqlite3Db>> injector_;
 };
 
 }
