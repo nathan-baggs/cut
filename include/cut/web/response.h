@@ -39,11 +39,30 @@ constexpr auto Ok(T &&obj) -> Response
     }
 }
 
+constexpr auto Created() -> Response
+{
+    return {.code = 201, .response = ""};
+}
+
+template <class T>
+constexpr auto Created(T &&obj) -> Response
+{
+    if constexpr (details::StringIsh<T>)
+    {
+        return {.code = 201, .response = obj};
+    }
+    else
+    {
+        return {.code = 201, .response = utils::to_json<T>(obj)};
+    }
+}
+
 inline constexpr auto code_to_str(const Response &response) -> std::string
 {
     switch (response.code)
     {
         case 200: return "OK";
+        case 301: return "CREATED";
     }
 
     return "unknown";
