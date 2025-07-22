@@ -13,9 +13,18 @@
 namespace cut::web
 {
 
+/**
+ * Base class for a Socket.
+ */
 class Socket
 {
   public:
+    /**
+     * Construct a new Socket.
+     *
+     * @param ev
+     *   The event handler to resume us.
+     */
     Socket(coro::EventLoop &ev)
         : fd_{-1, ::close}
         , ev_{ev}
@@ -35,11 +44,20 @@ class Socket
     auto operator=(const Socket &) -> Socket & = delete;
     Socket(Socket &&other) = default;
 
+    /**
+     * Get the file descriptor for the socket.
+     *
+     * @returns
+     *   File descriptor.
+     */
     auto native_handle() const -> int
     {
         return fd_;
     }
 
+    /**
+     * Resume the coroutine.
+     */
     auto resume() const -> void
     {
         utils::expect(!!handle_, "invalid handle");
@@ -47,8 +65,13 @@ class Socket
     }
 
   protected:
+    /** Auto releasing file descriptor. */
     utils::AutoRelease<int, -1> fd_;
+
+    /** Event loop that will resume us. */
     coro::EventLoop &ev_;
+
+    /** Coroutine handle for resuming. */
     std::coroutine_handle<> handle_;
 };
 

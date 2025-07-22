@@ -23,12 +23,17 @@
 namespace cut::web
 {
 
+/**
+ * Implementation of Socket for a server that can accept clients
+ */
 class ServerSocket : public Socket
 {
   public:
     ServerSocket(std::uint16_t port, coro::EventLoop &ev)
         : Socket(ev)
     {
+        // standard network setup chuff
+
         fd_ = {::socket(AF_INET, SOCK_STREAM, 0), ::close};
         utils::ensure(fd_, "could not create socket");
 
@@ -54,6 +59,9 @@ class ServerSocket : public Socket
         ev_.register_socket(this);
     }
 
+    /**
+     * Accept a client.
+     */
     auto accept()
     {
         struct Awaitable

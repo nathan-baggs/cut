@@ -12,9 +12,20 @@
 namespace cut::web
 {
 
+/**
+ * Implementation of Socket for a connected client that can read bytes.
+ */
 class ClientSocket : public Socket
 {
   public:
+    /**
+     * Construct a new ClientSocket.
+     *
+     *   @param fd
+     *     The file descriptor for the socket.
+     *   @param ev
+     *     The event handler to resume us.
+     */
     ClientSocket(int fd, coro::EventLoop &ev)
         : Socket(ev)
     {
@@ -22,6 +33,13 @@ class ClientSocket : public Socket
         ev_.register_socket(this);
     }
 
+    /**
+     * Read bytes from the network until a certain sequence is seen. This waits for some data to be available then
+     * blocking reads until the sequence is found.
+     *
+     * @param end
+     *   The string to wait for.
+     */
     auto read_until(std::string_view end)
     {
         struct Awaitable
@@ -41,6 +59,7 @@ class ClientSocket : public Socket
             {
                 auto buffer = std::string{};
 
+                // keep reading till we get what we want
                 while (!buffer.ends_with(end))
                 {
                     auto c = char{};
@@ -52,6 +71,7 @@ class ClientSocket : public Socket
                     buffer.push_back(c);
                 }
 
+                // return the read sting (including the ending)
                 return buffer;
             }
 
@@ -62,6 +82,13 @@ class ClientSocket : public Socket
         return Awaitable{*this, end};
     }
 
+    /**
+     * Read a fixed number of bytes from the network. Like above this waits for some data to be available and then
+     * blocks until all is read.
+     *
+     * @param num_bytes
+     *   The number of bytes to read.
+     */
     auto read(std::size_t num_bytes)
     {
         struct Awaitable
@@ -94,6 +121,12 @@ class ClientSocket : public Socket
         return Awaitable{*this, num_bytes};
     }
 
+    /**
+     * Synchronous write - no coroutines here.
+     *
+     * @param data
+     *   The data to send back.
+     */
     auto write(const std::string data) -> void
     {
         const auto write_amount = ::write(fd_, data.data(), data.size());

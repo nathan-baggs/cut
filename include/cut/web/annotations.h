@@ -10,6 +10,8 @@ namespace cut::web
 namespace annotations
 {
 
+// annotations for signalling a function is a handler for a HTTP request (and it's method)
+
 struct Get
 {
     static constexpr auto method = "GET"sv;
